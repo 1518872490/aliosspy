@@ -7,7 +7,7 @@ Aliyun OSS API by:
 Michael Liao (askxuefeng@gmail.com)
 '''
 
-import os, sha, time, hmac, base64, hashlib, urllib, urllib2, mimetypes
+import re, os, sha, time, hmac, base64, hashlib, urllib, urllib2, mimetypes
 
 from datetime import datetime, timedelta, tzinfo
 from StringIO import StringIO
@@ -29,6 +29,9 @@ def main():
 
 _HOST = 'storage.aliyun.com'
 _URL = 'http://%s.oss.aliyuncs.com/%s'
+
+_RE_URL1 = re.compile(r'^http\:\/\/(\w+)\.oss\.aliyuncs\.com\/(.+)$')
+_RE_URL2 = re.compile(r'^http\:\/\/storage\.aliyun\.com/(\w+)\/(.+)$')
 
 class StorageError(StandardError):
     pass
@@ -55,6 +58,26 @@ class Client(object):
         if self._bucket:
             return self._bucket
         raise StorageError('BucketName', 'Bucket is required but no default bucket specified.')
+
+    def names_from_url(self, url):
+        '''
+        get bucket and object name from url.
+
+        >>> c = Client('key', 'secret')
+        >>> c.names_from_url('http://sample.oss.aliyuncs.com/test/hello.html')
+        ('sample', 'test/hello.html')
+        >>> c.names_from_url('http://storage.aliyun.com/sample/test/hello.html')
+        ('sample', 'test/hello.html')
+        >>> c.names_from_url('http://www.aliyun.com/')
+        (None, None)
+        '''
+        m = _RE_URL1.match(url)
+        if m:
+            return m.groups()
+        m = _RE_URL2.match(url)
+        if m:
+            return m.groups()
+        return None, None
 
     def get_object(self, obj, bucket=None):
         '''
@@ -169,7 +192,7 @@ def _api(access_key_id, access_key_secret, verb, bucket, obj, payload=None, head
     headers['Authorization'] = 'OSS %s:%s' % (access_key_id, authorization)
     r = _httprequest(host, verb, path, payload, headers)
     if verb=='PUT':
-        return 'http://storage.aliyun.com/%s/%s' % (bucket, path)
+        return _URL % (bucket, path)
     return r
 
 if __name__ == '__main__':
