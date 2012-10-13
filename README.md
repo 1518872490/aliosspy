@@ -10,8 +10,14 @@ A really simple interface for Python:
     # http url of object
 
     print client.get_object('path/to/hello.html')
+    # <h1>file content</h1>
 
     client.delete_object('path/to/hello.html')
+
+    print client.get_object('path/to/hello.html')
+    # Traceback (most recent call last):
+    #   ...
+    # StorageError: ('NoSuchKey', 'The specified key does not exist.')
 
 Requirement:
 
